@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>I dati aiutano — Open Data ISTAT</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface2: #334155;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent2: #22d3ee;
+      --success: #4ade80;
+      --warning: #fbbf24;
+      --radius: 12px;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--surface2);
+    }
+
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .logo {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 1rem;
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.88rem;
+      transition: color 0.2s;
+    }
+
+    nav a:hover { color: var(--accent); }
+
+    .hero {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 3.5rem 1.5rem 2.5rem;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.75rem;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 1.15rem;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 1.5rem 4rem;
+    }
+
+    section {
+      background: var(--surface);
+      border: 1px solid var(--surface2);
+      border-radius: var(--radius);
+      padding: 2rem;
+      margin-bottom: 1.75rem;
+    }
+
+    section h2 {
+      font-size: 1.45rem;
+      margin-bottom: 1rem;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    section h2::before {
+      content: "";
+      width: 4px;
+      height: 1.2em;
+      background: linear-gradient(180deg, var(--accent), var(--accent2));
+      border-radius: 2px;
+    }
+
+    section h3 {
+      font-size: 1.05rem;
+      margin: 1.25rem 0 0.5rem;
+      color: var(--text);
+    }
+
+    p { margin-bottom: 0.85rem; color: #cbd5e1; }
+
+    ul {
+      margin: 0.5rem 0 1rem 1.25rem;
+      color: #cbd5e1;
+    }
+
+    li { margin-bottom: 0.35rem; }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--surface2);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+    }
+
+    .card h3 {
+      font-size: 1rem;
+      margin: 0 0 0.5rem;
+      color: var(--accent2);
+    }
+
+    .card p { font-size: 0.92rem; margin: 0; }
+
+    .charts-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .chart-box {
+      background: var(--bg);
+      border: 1px solid var(--surface2);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+    }
+
+    .chart-box h3 {
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 0.65rem 0.85rem;
+      text-align: left;
+      border-bottom: 1px solid var(--surface2);
+    }
+
+    th {
+      background: var(--bg);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    tr:hover td { background: rgba(56, 189, 248, 0.06); }
+
+    .commentary {
+      background: var(--bg);
+      border-left: 4px solid var(--success);
+      padding: 1rem 1.25rem;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      margin-top: 1rem;
+    }
+
+    .commentary p { margin: 0; }
+
+    .note {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.75rem;
+      font-style: italic;
+    }
+
+    .conclusion-list {
+      list-style: none;
+      margin-left: 0;
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .conclusion-list li::before {
+      content: "✓ ";
+      color: var(--success);
+      font-weight: bold;
+    }
+
+    footer {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      color: var(--muted);
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    footer span {
+      display: block;
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 400;
+      color: var(--surface2);
+    }
+
+    @media (max-width: 600px) {
+      section { padding: 1.25rem; }
+      .charts-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <div class="logo">I dati aiutano</div>
+      <nav>
+        <a href="#open-data">Open Data</a>
+        <a href="#perche">Perché</a>
+        <a href="#istat">ISTAT</a>
+        <a href="#direttiva">Direttiva UE</a>
+        <a href="#occupazione">Occupazione</a>
+        <a href="#conclusione">Conclusione</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="hero">
+    <h1>I dati aiutano</h1>
+    <p>Open Data, trasparenza e conoscenza della realtà italiana attraverso i dati pubblici ISTAT.</p>
+  </div>
+
+  <main>
+
+    <section id="open-data">
+      <h2>Cos'è un Open Data</h2>
+      <p>Gli <strong>open data</strong> sono dati pubblici liberamente accessibili. Possono essere:</p>
+      <ul>
+        <li>Scaricati</li>
+        <li>Riutilizzati</li>
+        <li>Condivisi</li>
+      </ul>
+      <p>Devono essere in formato leggibile da computer (CSV, JSON, XML…). Dunque gli open data favoriscono <strong>trasparenza</strong>, <strong>ricerca</strong> e <strong>innovazione</strong>.</p>
+    </section>
+
+    <section id="perche">
+      <h2>Perché aprire i dati pubblici?</h2>
+      <div class="cards">
+        <div class="card">
+          <h3>1. Trasparenza</h3>
+          <p>Rappresenta l'accesso aperto e verificabile alle informazioni pubbliche. Simboleggia la capacità del cittadino di controllare l'operato delle istituzioni attraverso flussi di dati e bilanci visibili.</p>
+        </div>
+        <div class="card">
+          <h3>2. Ricerca e innovazione</h3>
+          <p>Università e startup possono usare i dati per nuove soluzioni. Dati su popolazione, economia o ambiente aiutano a fare studi più accurati.</p>
+        </div>
+        <div class="card">
+          <h3>3. Servizi e applicazioni</h3>
+          <p>Le app possono utilizzare dati aperti per creare servizi utili. Esempio: app su trasporti, meteo, turismo.</p>
+        </div>
+        <div class="card">
+          <h3>4. Analisi sociale ed economica</h3>
+          <p>Comprendere fenomeni come disoccupazione, natalità, turismo. Permette confronti tra regioni, anni o settori.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="istat">
+      <h2>La piattaforma Open Data ISTAT</h2>
+      <p>La piattaforma Open Data di ISTAT permette di accedere gratuitamente ai dati statistici ufficiali italiani. L'obiettivo principale è rendere le informazioni pubbliche accessibili, consultabili e riutilizzabili da cittadini, studenti, ricercatori, aziende e istituzioni.</p>
+      <p>Attraverso il portale è possibile scaricare dataset relativi a diversi ambiti:</p>
+      <ul>
+        <li>Popolazione</li>
+        <li>Economia</li>
+        <li>Lavoro</li>
+        <li>Istruzione</li>
+        <li>Turismo</li>
+        <li>Ambiente</li>
+        <li>Società</li>
+      </ul>
+      <p>I dati sono disponibili in formati aperti e leggibili dai computer, come <strong>CSV</strong>, <strong>JSON</strong> e <strong>XML</strong>, così da poter essere utilizzati per analisi statistiche, grafici, ricerche o applicazioni digitali.</p>
+      <p>La piattaforma offre anche:</p>
+      <ul>
+        <li>Metadati descrittivi</li>
+        <li>Strumenti di ricerca dei dataset</li>
+        <li>API per l'accesso automatico ai dati</li>
+      </ul>
+      <p>Grazie agli Open Data ISTAT, le informazioni statistiche diventano una risorsa condivisa che favorisce trasparenza, innovazione e conoscenza della realtà italiana.</p>
+
+      <h3>Struttura della piattaforma ISTAT</h3>
+      <p>La piattaforma ISTAT Open Data è organizzata in modo da rendere semplice la ricerca e l'utilizzo delle informazioni statistiche. I dati sono suddivisi in dataset tematici, raccolti in categorie che riguardano diversi aspetti della società e dell'economia italiana.</p>
+      <p>Ogni dataset contiene:</p>
+      <ul>
+        <li>Dati statistici aggiornati</li>
+        <li>Descrizione delle informazioni</li>
+        <li>Periodo di riferimento</li>
+        <li>Fonte dei dati</li>
+        <li>Formato di download</li>
+      </ul>
+      <p>Un elemento importante della piattaforma sono i <strong>metadati</strong>, cioè informazioni che descrivono il contenuto del dataset e aiutano gli utenti a comprendere correttamente i dati pubblicati.</p>
+      <p>La struttura della piattaforma prevede inoltre:</p>
+      <ul>
+        <li>Motore di ricerca dei dataset</li>
+        <li>Filtri per argomento e periodo</li>
+        <li>Download dei dati</li>
+        <li>API per l'accesso automatico alle statistiche</li>
+      </ul>
+      <p>Questa organizzazione permette a utenti diversi, dai cittadini ai ricercatori, di consultare facilmente grandi quantità di dati pubblici.</p>
+    </section>
+
+    <section id="direttiva">
+      <h2>La direttiva europea sugli Open Data</h2>
+      <p>L'Unione Europea promuove la diffusione degli Open Data attraverso la <strong>Direttiva UE 2019/1024</strong>, conosciuta come "Direttiva Open Data".</p>
+      <p>Questa normativa ha l'obiettivo di rendere i dati pubblici più accessibili e riutilizzabili da cittadini, imprese e istituzioni, favorendo innovazione, trasparenza e sviluppo digitale.</p>
+    </section>
+
+    <section id="occupazione">
+      <h2>Focus: occupazione giovanile in Italia</h2>
+      <p>Per la parte pratica ho scelto di analizzare i dati ISTAT sull'<strong>occupazione giovanile</strong> in Italia (15–34 anni). Questo tema permette di studiare:</p>
+      <ul>
+        <li>Tasso di occupazione</li>
+        <li>Tasso di disoccupazione</li>
+        <li>Differenze tra Nord e Sud</li>
+        <li>Andamento nel tempo</li>
+      </ul>
+      <p>I dati mostrano che:</p>
+      <ul>
+        <li>Il lavoro giovanile varia molto tra le regioni</li>
+        <li>Negli ultimi anni si osserva una lieve crescita dell'occupazione</li>
+        <li>Permangono differenze territoriali significative</li>
+      </ul>
+
+      <h3>Rappresentazione dei dati su pagina web</h3>
+      <p>I dati ISTAT sono stati utilizzati per creare questa pagina web contenente tabelle statistiche, grafici sull'occupazione, confronto tra anni diversi e commento dei risultati.</p>
+
+      <div class="charts-row">
+        <div class="chart-box">
+          <h3>Tasso di occupazione giovanile (15–34 anni) — Italia</h3>
+          <canvas id="chartAnni"></canvas>
+        </div>
+        <div class="chart-box">
+          <h3>Confronto per area geografica (2024)</h3>
+          <canvas id="chartAree"></canvas>
+        </div>
+      </div>
+
+      <h3>Tabella: tasso di occupazione giovanile per macro-area (%)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Macro-area</th>
+            <th>2019</th>
+            <th>2021</th>
+            <th>2023</th>
+            <th>2024</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Nord</td><td>48,2</td><td>47,5</td><td>50,1</td><td>51,3</td></tr>
+          <tr><td>Centro</td><td>38,6</td><td>37,9</td><td>40,2</td><td>41,0</td></tr>
+          <tr><td>Sud e Isole</td><td>28,4</td><td>27,1</td><td>29,5</td><td>30,2</td></tr>
+          <tr><td><strong>Italia</strong></td><td><strong>38,9</strong></td><td><strong>37,8</strong></td><td><strong>40,1</strong></td><td><strong>41,2</strong></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Tabella: tasso di disoccupazione giovanile (%)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Anno</th>
+            <th>Italia</th>
+            <th>Nord</th>
+            <th>Sud e Isole</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>2019</td><td>28,9</td><td>18,4</td><td>42,1</td></tr>
+          <tr><td>2021</td><td>29,7</td><td>19,2</td><td>43,8</td></tr>
+          <tr><td>2023</td><td>22,5</td><td>14,1</td><td>34,6</td></tr>
+          <tr><td>2024</td><td>21,8</td><td>13,5</td><td>33,9</td></tr>
+        </tbody>
+      </table>
+
+      <div class="commentary">
+        <p><strong>Commento ai risultati:</strong> dal 2019 al 2024 il tasso di occupazione giovanile in Italia mostra un andamento in recupero dopo il calo del 2020–2021, con valori che passano dal 37,8% al 41,2%. Il divario tra Nord e Sud resta marcato: nel 2024 il Nord supera il 51% mentre il Sud resta intorno al 30%. La disoccupazione giovanile nel Mezzogiorno resta quasi il doppio rispetto al Nord, confermando le differenze territoriali citate nei dati ISTAT.</p>
+      </div>
+      <p class="note">Dati indicativi basati su serie ISTAT (occupazione e disoccupazione, 15–34 anni). Per i valori ufficiali aggiornati consultare <a href="https://www.istat.it/" style="color: var(--accent);">istat.it</a> e il portale Open Data.</p>
+    </section>
+
+    <section id="conclusione">
+      <h2>Conclusione</h2>
+      <p>Gli Open Data rappresentano uno strumento fondamentale per rendere le informazioni pubbliche accessibili, trasparenti e riutilizzabili da tutti.</p>
+      <p>Grazie alla piattaforma ISTAT e alle direttive dell'Unione Europea, i dati statistici possono essere consultati liberamente e utilizzati per analisi, studi e applicazioni digitali.</p>
+      <p>Questo favorisce:</p>
+      <ul class="conclusion-list">
+        <li>Maggiore trasparenza delle istituzioni</li>
+        <li>Sviluppo dell'innovazione e della ricerca</li>
+        <li>Migliore comprensione dei fenomeni sociali ed economici</li>
+      </ul>
+      <p style="margin-top: 1rem;">In conclusione, gli Open Data trasformano i dati pubblici in conoscenza utile, contribuendo alla crescita digitale e culturale della società.</p>
+    </section>
+
+  </main>
+
+  <footer>
+    GRAZIE PER L'ATTENZIONE
+    <span>Progetto locale — I dati aiutano</span>
+  </footer>
+
+  <script>
+    const chartDefaults = {
+      color: "#94a3b8",
+      borderColor: "#334155"
+    };
+
+    Chart.defaults.color = chartDefaults.color;
+    Chart.defaults.borderColor = chartDefaults.borderColor;
+    Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+
+    new Chart(document.getElementById("chartAnni"), {
+      type: "line",
+      data: {
+        labels: ["2019", "2020", "2021", "2022", "2023", "2024"],
+        datasets: [{
+          label: "Tasso occupazione (%)",
+          data: [38.9, 35.2, 37.8, 39.4, 40.1, 41.2],
+          borderColor: "#38bdf8",
+          backgroundColor: "rgba(56, 189, 248, 0.15)",
+          fill: true,
+          tension: 0.3,
+          pointRadius: 5,
+          pointBackgroundColor: "#22d3ee"
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            min: 30,
+            max: 45,
+            ticks: { callback: v => v + "%" }
+          }
+        }
+      }
+    });
+
+    new Chart(document.getElementById("chartAree"), {
+      type: "bar",
+      data: {
+        labels: ["Nord", "Centro", "Sud e Isole"],
+        datasets: [{
+          label: "Occupazione 2024 (%)",
+          data: [51.3, 41.0, 30.2],
+          backgroundColor: ["#38bdf8", "#22d3ee", "#fbbf24"],
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            min: 0,
+            max: 60,
+            ticks: { callback: v => v + "%" }
+          }
+        }
+      }
+    });
+  </script>
+
+</body>
+</html>
